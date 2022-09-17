@@ -7,6 +7,12 @@
 using port_t = short;
 
 // a very simple client
+
+struct clientInfo
+{
+	char userId[];
+};
+
 int main() {
 	WsaWrapper wsa;
 
@@ -28,4 +34,20 @@ int main() {
 	nbytes = recv(s, buffer, sizeof(buffer), 0);
 
 	closesocket(s);
+}
+
+int connectInit(SOCKET s, std::string_view usrId)
+{
+	char ok[16];
+	int bytes = send(s, usrId.data(), usrId.size(), 0);
+	if (bytes == SOCKET_ERROR)
+		printf("Failed to send()... ERR: %d", WSAGetLastError());
+
+	bytes = recv(s, ok, 2, 0);
+	if (bytes == 2)
+		printf("Successful aproved by server...\n");
+	else
+		printf("Nickname not approved..\n");
+
+	return 0;
 }

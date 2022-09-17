@@ -7,6 +7,9 @@
 #define  _WINSOCK_DEPRECATED_NO_WARNINGS 1
 #include <WinSock2.h>
 #include <ws2tcpip.h>
+#include <string>
+#include <string_view>
+
 #pragma comment (lib, "Mswsock.lib")
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "AdvApi32.lib")

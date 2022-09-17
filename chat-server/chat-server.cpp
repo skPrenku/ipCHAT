@@ -1,6 +1,17 @@
 #include "../common/refs.h"
+#include <map>
 
 using port_t = short;
+
+struct clientInfo {
+	clientInfo() = default;
+	clientInfo(std::string_view clUserName) {
+		userid = clUserName;
+	}
+	std::string userid;
+};
+
+std::map<SOCKET, clientInfo> clientList;
 
 // a very basic server
 int main() {
@@ -30,4 +41,16 @@ int main() {
 
 	closesocket(cli);
 	closesocket(s);
+}
+
+int acceptClient(SOCKET s)
+{
+	char buffer[16];
+	int bytes = recv(s, buffer, sizeof(buffer), 0);
+	if (buffer > 0)
+	{
+		std::string_view userID(buffer, sizeof(buffer));
+
+		clientList[s] = clientInfo( userID);
+	}
 }
