@@ -1,5 +1,6 @@
 // chat-server.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
+
 #include <assert.h>
 
 // Copied for work we've done before
@@ -41,8 +42,26 @@ using socket_t = int;
 
 using port_t = short;
 
+#include <iostream>
+#include <map>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+
+struct ClientInfo {
+	ClientInfo() = default;
+	ClientInfo(std::string_view userid) : userid(userid) {
+	}
+	std::string userid;
+};
+std::map<socket_t, ClientInfo> clients;
+
+// handle ClientHello
+void recvClientHello(socket_t s);
+
 // a very basic server
-int main() {
+int main()
+try {
 	WsaWrapper wsa;
 
 	int rc;
@@ -61,6 +80,7 @@ int main() {
 	char buf[128];
 	socklen_t buflen = sizeof(buf);
 	socket_t cli = accept(s, (sockaddr*)buf, &buflen);
+	recvClientHello(cli);
 
 	ssize_t nbytes;
 	nbytes = recv(cli, buf, sizeof(buf), 0);
@@ -69,4 +89,22 @@ int main() {
 
 	closesocket(cli);
 	closesocket(s);
+}
+catch (const std::exception& e) {
+	std::cerr << "fatal: " << e.what() << "\n";
+}
+
+// handle ClientHello
+void recvClientHello(socket_t s) {
+	char buffer[16];
+	ssize_t nbytes = recv(s, buffer, sizeof(buffer), 0);
+	std::clog << "recvClientHello: recv: nbytes=" << nbytes << '\n';
+	if (nbytes < 1) {
+		throw std::runtime_error("failed to receive ClientHello");
+	}
+
+	std::string_view userid{ buffer, static_cast<std::size_t>(nbytes) }; // take what was sent without checking it
+	std::clog << "recvClientHello: saving client=" << userid << '\n';
+	clients[s] = ClientInfo(userid); // create client record
+	send(s, "OK", 2, 0);
 }
