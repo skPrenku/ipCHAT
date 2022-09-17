@@ -1,47 +1,9 @@
 // chat-client.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
-#include <assert.h>
+#include "defs.hpp"
 
-// Copied for work we've done before
-#if defined(_WIN32) || defined(_WIN64)
-// Windows
-#define WIN32_LEAN_AND_MEAN 1
-#define NOMINMAX 1
-#define  _WINSOCK_DEPRECATED_NO_WARNINGS 1
-#include <WinSock2.h>
-#include <ws2tcpip.h>
-#pragma comment (lib, "Mswsock.lib")
-#pragma comment (lib, "Ws2_32.lib")
-#pragma comment (lib, "AdvApi32.lib")
-
-class WsaWrapper {
-public:
-	WsaWrapper() {
-		WSADATA data;
-		auto rc = WSAStartup(MAKEWORD(2, 2), &data);
-		assert(rc == 0);
-	}
-	~WsaWrapper() {
-		WSACleanup();
-	}
-};
-using socket_t = SOCKET;
-using ssize_t = int;
-
-#else
-// Unix
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <arpa/inet.h>
-
-using socket_t = int;
-#endif
-
-using port_t = short;
-
+#include <cstring>
 #include <iostream>
 #include <stdexcept>
 #include <string_view>
@@ -51,7 +13,9 @@ void sendClientHello(socket_t s, std::string_view userid);
 // a very simple client
 int main(int argc, char* argv[])
 try {
+#if defined(_WIN32) || defined(_WIN64)
 	WsaWrapper wsa;
+#endif
 
 	const char* userid = (argc > 1 ? argv[1] : "emily");
 	int rc;
@@ -73,7 +37,11 @@ try {
 	char buffer[128];
 	nbytes = recv(s, buffer, sizeof(buffer), 0);
 
+#if defined(_WIN32) || defined(_WIN64)
 	closesocket(s);
+#else
+	close(s);
+#endif
 }
 catch (const std::exception& e) {
 	std::cerr << "fatal: " << e.what() << "\n";
@@ -83,7 +51,7 @@ catch (const std::exception& e) {
 void sendClientHello(socket_t s, std::string_view userid) {
 	std::clog << "sendClientHello: sending userid=" << userid << '\n';
 	ssize_t nbytes = send(s, userid.data(), userid.size(), 0);
-	if (nbytes != userid.size()) {
+	if (nbytes != static_cast<ssize_t>(userid.size())) {
 		throw std::runtime_error("cannot send ClientHello");
 	}
 
