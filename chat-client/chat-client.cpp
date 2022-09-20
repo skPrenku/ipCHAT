@@ -10,10 +10,12 @@ using port_t = short;
 
 struct clientInfo
 {
-	char userId[];
+	std::string userId;
 };
 
-int main() {
+int connectInit(SOCKET s, std::string_view usrId);
+
+int main(int argc , char *argv[]) {
 	WsaWrapper wsa;
 
 	int rc;
@@ -26,28 +28,29 @@ int main() {
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	rc = connect(s, (sockaddr*)&addr, sizeof(addr)); assert(rc == 0);
-
-	ssize_t nbytes;
-	nbytes = send(s, "dan hello, how are you?", 23, 0); assert(nbytes == 23);
-	char buffer[128];
-	nbytes = recv(s, buffer, sizeof(buffer), 0);
+	rc = connect(s, (sockaddr*)&addr, sizeof(addr)); 
+	if (rc == 0)
+		connectInit(s, "ilir");
+	else
+		printf("Connecting to  server failed..\n");
+	
 
 	closesocket(s);
 }
 
 int connectInit(SOCKET s, std::string_view usrId)
 {
-	char ok[16];
-	int bytes = send(s, usrId.data(), usrId.size(), 0);
+	char auth[16];
+	int bytes = send(s, usrId.data(), (int)usrId.size(), 0);
 	if (bytes == SOCKET_ERROR)
 		printf("Failed to send()... ERR: %d", WSAGetLastError());
 
-	bytes = recv(s, ok, 2, 0);
+	bytes = recv(s, auth, 2, 0);
+
 	if (bytes == 2)
 		printf("Successful aproved by server...\n");
 	else
-		printf("Nickname not approved..\n");
+		printf("Nickname not approved..bytes recv: %d\n",bytes);
 
 	return 0;
 }

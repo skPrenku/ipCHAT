@@ -5,14 +5,14 @@ using port_t = short;
 
 struct clientInfo {
 	clientInfo() = default;
-	clientInfo(std::string_view clUserName) {
-		userid = clUserName;
+	clientInfo(std::string_view clUserName , SOCKET s) : userid(clUserName), clSocket(s) {	
 	}
 	std::string userid;
+	SOCKET clSocket = INVALID_SOCKET;
 };
 
 std::map<SOCKET, clientInfo> clientList;
-
+int acceptClient(SOCKET s);
 // a very basic server
 int main() {
 	WsaWrapper wsa;
@@ -24,7 +24,7 @@ int main() {
 
 	sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
+	addr.sin_family = PF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = INADDR_ANY;
 	rc = bind(s, (sockaddr*)&addr, sizeof(addr)); assert(rc == 0);
@@ -33,11 +33,8 @@ int main() {
 	char buf[128];
 	socklen_t buflen = sizeof(buf);
 	socket_t cli = accept(s, (sockaddr*)buf, &buflen);
-
-	ssize_t nbytes;
-	nbytes = recv(cli, buf, sizeof(buf), 0);
-	// examine what was sent
-	nbytes = send(cli, "jan ok", 6, 0); assert(nbytes == 6);
+	if (cli != INVALID_SOCKET)
+		acceptClient(cli);
 
 	closesocket(cli);
 	closesocket(s);
@@ -46,11 +43,19 @@ int main() {
 int acceptClient(SOCKET s)
 {
 	char buffer[16];
+	ZeroMemory(&buffer, 16);
 	int bytes = recv(s, buffer, sizeof(buffer), 0);
-	if (buffer > 0)
+	if (bytes >)
 	{
-		std::string_view userID(buffer, sizeof(buffer));
+		std::string userID = buffer;
 
-		clientList[s] = clientInfo( userID);
+		clientList[s] = clientInfo(userID, s);
+		printf("User %s accepted on socket: %d",userID.data(), (int)s);
+		bytes = send(s, "OK", 2, 0);
+		return 0;
 	}
+	else {
+		printf("User not accepted\n");
+	}
+
 }
