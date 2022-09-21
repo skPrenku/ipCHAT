@@ -21,7 +21,7 @@ int main(int argc , char *argv[]) {
 	int rc;
 	port_t port = 3232; // some random port
 
-	socket_t s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP); assert(s > 0);
+	socket_t s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); assert(s > 0);
 
 	sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
@@ -30,7 +30,7 @@ int main(int argc , char *argv[]) {
 	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	rc = connect(s, (sockaddr*)&addr, sizeof(addr)); 
 	if (rc == 0)
-		connectInit(s, "ilir");
+		connectInit(s, argv[1]);
 	else
 		printf("Connecting to  server failed..\n");
 	
@@ -41,6 +41,8 @@ int main(int argc , char *argv[]) {
 int connectInit(SOCKET s, std::string_view usrId)
 {
 	char auth[16];
+	char buffer[128];
+	std::string msg;
 	int bytes = send(s, usrId.data(), (int)usrId.size(), 0);
 	if (bytes == SOCKET_ERROR)
 		printf("Failed to send()... ERR: %d", WSAGetLastError());
@@ -48,7 +50,23 @@ int connectInit(SOCKET s, std::string_view usrId)
 	bytes = recv(s, auth, 2, 0);
 
 	if (bytes == 2)
+	{
 		printf("Successful aproved by server...\n");
+		while (serverIsRunning) {
+			printf("You: ");
+			std::cin >> msg;
+			if (msg == "exit") 
+				break;
+
+			strcpy(buffer, msg.c_str());
+			bytes = send(s, buffer, sizeof(buffer), 0);
+
+			bytes = recv(s, buffer, sizeof(buffer), 0);
+			if (bytes > 0)
+				printf(buffer);
+		}
+	}
+		
 	else
 		printf("Nickname not approved..bytes recv: %d\n",bytes);
 
