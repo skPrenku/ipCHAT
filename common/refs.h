@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <assert.h>
 // Copied for work we've done before
 #if defined(_WIN32) || defined(_WIN64)
@@ -42,3 +43,13 @@ using socket_t = int;
 #endif
 
 bool serverIsRunning = true;
+
+#pragma pack(push)
+
+#pragma pack(1)
+struct Packet
+{
+	char name[10];
+	char body[128];
+};
+#pragma pack(pop)

@@ -2,7 +2,7 @@
 //
 
 #include "../common/refs.h"
-
+#include <thread>
 
 using port_t = short;
 
@@ -13,7 +13,9 @@ struct clientInfo
 	std::string userId;
 };
 
+void recvMessages(SOCKET s);
 int connectInit(SOCKET s, std::string_view usrId);
+
 
 int main(int argc , char *argv[]) {
 	WsaWrapper wsa;
@@ -42,6 +44,7 @@ int connectInit(SOCKET s, std::string_view usrId)
 {
 	char auth[16];
 	char buffer[128];
+	ZeroMemory(buffer, 128);
 	std::string msg;
 	int bytes = send(s, usrId.data(), (int)usrId.size(), 0);
 	if (bytes == SOCKET_ERROR)
@@ -52,23 +55,52 @@ int connectInit(SOCKET s, std::string_view usrId)
 	if (bytes == 2)
 	{
 		printf("Successful aproved by server...\n");
+
+		std::thread t1(recvMessages, s);
+	
+
 		while (serverIsRunning) {
-			printf("You: ");
-			std::cin >> msg;
-			if (msg == "exit") 
+
+			
+			//std::cin >> buffer;
+
+			std::cin.getline(buffer, sizeof(buffer));
+			if (strcmp(buffer,"exit") == 0)
 				break;
 
-			strcpy(buffer, msg.c_str());
 			bytes = send(s, buffer, sizeof(buffer), 0);
 
-			bytes = recv(s, buffer, sizeof(buffer), 0);
-			if (bytes > 0)
-				printf(buffer);
+
 		}
+
+		t1.join();
 	}
 		
 	else
 		printf("Nickname not approved..bytes recv: %d\n",bytes);
 
 	return 0;
+}
+
+void recvMessages(SOCKET s)
+{
+	char buffer[128];
+	int byte = 0;
+
+	while (true)
+	{
+		ZeroMemory(buffer, 128);
+		byte = recv(s, buffer, sizeof(buffer), 0);
+
+		if (byte > 0)
+		{
+			printf("%s \n", buffer);
+		}
+
+		if (byte == 0)
+		{
+			printf("Disconnected from Server...\n");
+			break;
+		}
+	}
 }
